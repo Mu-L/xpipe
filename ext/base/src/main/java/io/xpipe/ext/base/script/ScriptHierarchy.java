@@ -21,7 +21,7 @@ public class ScriptHierarchy {
         var enabled =
                 ScriptStoreSetup.getEnabledScripts().stream().filter(include).toList();
 
-        var categories = new HashSet<DataStoreCategory>();
+        var categories = new LinkedHashSet<DataStoreCategory>();
         for (DataStoreEntryRef<ScriptStore> ref : enabled) {
             var cat = DataStorage.get().getStoreCategory(ref.get());
             var catParents = DataStorage.get().getCategoryParentHierarchy(cat);
@@ -40,7 +40,8 @@ public class ScriptHierarchy {
                 var toAdd = new ScriptHierarchy(cat.getName(), cat, null, new ArrayList<>());
 
                 if (cat.getParentCategory().equals(DataStorage.ALL_SCRIPTS_CATEGORY_UUID)) {
-                    if (!hierarchy.getChildren().contains(toAdd)) {
+                    if (hierarchy.getChildren().stream().noneMatch(scriptHierarchy ->
+                            scriptHierarchy.getCategory() != null && scriptHierarchy.getCategory().getUuid().equals(cat.getUuid()))) {
                         hierarchy.getChildren().add(toAdd);
                         changed = true;
                     }
@@ -52,7 +53,8 @@ public class ScriptHierarchy {
                     continue;
                 }
 
-                var alreadyAdded = parentHierarchy.get().getChildren().contains(toAdd);
+                var alreadyAdded = parentHierarchy.get().getChildren().stream().anyMatch(scriptHierarchy ->
+                        scriptHierarchy.getCategory() != null && cat.getUuid().equals(scriptHierarchy.getCategory().getUuid()));
                 if (alreadyAdded) {
                     continue;
                 }
@@ -90,7 +92,7 @@ public class ScriptHierarchy {
     }
 
     private static Optional<ScriptHierarchy> findParent(ScriptHierarchy hierarchy, DataStoreCategory category) {
-        if (category.equals(hierarchy.getCategory())) {
+        if (hierarchy.getCategory() != null && category.getParentCategory().equals(hierarchy.getCategory().getUuid())) {
             return Optional.of(hierarchy);
         }
 
@@ -119,14 +121,6 @@ public class ScriptHierarchy {
         } else {
             return new ScriptHierarchy(hierarchy.getName(), hierarchy.getCategory(), hierarchy.getScript(), children);
         }
-    }
-
-    public boolean isEmptyBranch() {
-        if (category == null) {
-            return false;
-        }
-
-        return children.isEmpty();
     }
 
     public boolean isLeaf() {
