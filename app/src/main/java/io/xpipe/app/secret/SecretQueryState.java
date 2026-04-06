@@ -20,7 +20,7 @@ public enum SecretQueryState {
                 yield "Authentication operation was cancelled";
             }
             case NON_INTERACTIVE -> {
-                yield "Session is not interactive but required user input for authentication";
+                yield "Session is not interactive but required user input for authentication as no password is preconfigured";
             }
             case FIXED_SECRET_WRONG -> {
                 yield "Authentication failed: Provided authentication secret was not accepted by the server, probably because it is incorrect";

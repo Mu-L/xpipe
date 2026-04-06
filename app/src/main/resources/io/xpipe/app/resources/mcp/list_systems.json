@@ -9,7 +9,9 @@
         "description": "The system name filter, also supports globs"
       }
     },
-    "required": []
+    "required": [
+      "filter"
+    ]
   },
   "outputSchema": {
     "type": "object",

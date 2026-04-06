@@ -46,6 +46,11 @@ public class AppMcpServer {
                 (serverRequest) -> McpTransportContext.EMPTY,
                 null);
 
+        var prompt = McpSchemaFiles.load("prompt.md");
+        var effectivePrompt = AppPrefs.get().mcpAdditionalContext().getValue() != null ?
+                prompt.replace("__CUSTOM__", AppPrefs.get().mcpAdditionalContext().getValue()) :
+                prompt.replace("__CUSTOM__", "");
+
         McpSyncServer syncServer = io.modelcontextprotocol.server.McpServer.sync(transportProvider)
                 .serverInfo(AppNames.ofCurrent().getName(), AppProperties.get().getVersion())
                 .capabilities(McpSchema.ServerCapabilities.builder()
@@ -53,7 +58,7 @@ public class AppMcpServer {
                         .tools(true)
                         .prompts(false)
                         .build())
-                .instructions(AppPrefs.get().mcpAdditionalContext().getValue())
+                .instructions(effectivePrompt)
                 .build();
 
         var readOnlyTools = new ArrayList<McpServerFeatures.SyncToolSpecification>();
@@ -66,7 +71,6 @@ public class AppMcpServer {
 
         var mutationTools = new ArrayList<McpServerFeatures.SyncToolSpecification>();
         mutationTools.add(McpTools.openTerminal());
-        mutationTools.add(McpTools.openTerminalInline());
         mutationTools.add(McpTools.createFile());
         mutationTools.add(McpTools.writeFile());
         mutationTools.add(McpTools.createDirectory());

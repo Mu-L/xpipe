@@ -2,6 +2,7 @@ package io.xpipe.app.beacon.mcp;
 
 import io.xpipe.app.ext.ShellStore;
 import io.xpipe.app.issue.ErrorEventFactory;
+import io.xpipe.app.process.ShellControl;
 import io.xpipe.app.storage.DataStorage;
 import io.xpipe.app.storage.DataStorageQuery;
 import io.xpipe.app.storage.DataStoreEntry;
@@ -113,13 +114,13 @@ public interface McpToolHandler
             return b;
         }
 
-        public FilePath getFilePath(String key) throws BeaconClientException {
+        public FilePath getFilePath(ShellControl sc, String key) throws Exception {
             var s = getStringArgument(key);
             var path = FilePath.parse(s);
             if (path == null) {
                 throw new BeaconClientException("Invalid argument for key " + key);
             }
-            return path;
+            return path.resolveTildeHome(sc.view().userHome());
         }
 
         public DataStoreEntryRef<?> getDataStoreRef(String name) throws BeaconClientException {
@@ -130,7 +131,7 @@ public interface McpToolHandler
 
             if (found.size() > 1) {
                 throw new BeaconClientException("Multiple connections found: "
-                        + found.stream().map(DataStoreEntry::getName).toList());
+                        + found.stream().map(entry -> DataStorage.get().getStorePath(entry).toString()).toList());
             }
 
             var e = found.getFirst();

@@ -1,6 +1,6 @@
 {
   "name": "list_files",
-  "description": "Lists files in a directory",
+  "description": "Lists files in a directory without recursion",
   "inputSchema": {
     "type": "object",
     "properties": {
@@ -11,10 +11,6 @@
       "path": {
         "type": "string",
         "description": "The directory to list the contents of"
-      },
-      "recursive": {
-        "type": "boolean",
-        "description": "Whether to traverse subdirectories recursively or not"
       }
     },
     "required": [

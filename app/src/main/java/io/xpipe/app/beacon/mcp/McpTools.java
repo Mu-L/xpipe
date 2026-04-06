@@ -63,6 +63,9 @@ public final class McpTools {
                                             + syncToolSpecification.tool().description())
                             .collect(Collectors.joining("\n"));
 
+                    var muEnabled = AppPrefs.get().enableMcpMutationTools().get();
+                    var muStatus = muEnabled ? "Right now, the mutation tools are enabled." : "Right now, the mutation tools are disabled. When you enable them in the settings menu, the MCP client might need a reconnect to see the changes.";
+
                     var text = """
                                The XPipe MCP server offers the following read-only tools:
                                %s
@@ -71,7 +74,8 @@ public final class McpTools {
                                You can also enable the following potentially destructive tools in the settings menu:
                                %s
                                These tools can perform write operations and other actions that might be potentially destructive.
-                               """.formatted(roList, muList);
+                               %s
+                               """.formatted(roList, muList, muStatus);
 
                     return McpSchema.CallToolResult.builder()
                             .addTextContent(text)
@@ -138,10 +142,8 @@ public final class McpTools {
         return McpServerFeatures.SyncToolSpecification.builder()
                 .tool(tool)
                 .callHandler(McpToolHandler.of((req) -> {
-                    var filter = req.getOptionalStringArgument("filter");
-                    var entries = filter.isPresent()
-                            ? DataStorageQuery.queryUserInput(filter.get())
-                            : DataStorage.get().getStoreEntries();
+                    var filter = req.getStringArgument("filter");
+                    var entries = DataStorageQuery.queryUserInput(filter);
 
                     var list = new ArrayList<ConnectionResource>();
                     for (var e : entries) {
@@ -192,10 +194,10 @@ public final class McpTools {
         return McpServerFeatures.SyncToolSpecification.builder()
                 .tool(tool)
                 .callHandler(McpToolHandler.of((req) -> {
-                    var path = req.getFilePath("path");
                     var system = req.getStringArgument("system");
                     var shellStore = req.getShellStoreRef(system, false);
                     var shellSession = AppBeaconServer.get().getCache().getOrStart(shellStore);
+                    var path = req.getFilePath(shellSession.getControl(), "path");
                     var fs = new ConnectionFileSystem(shellSession.getControl());
 
                     if (!fs.fileExists(path)) {
@@ -218,12 +220,12 @@ public final class McpTools {
         return McpServerFeatures.SyncToolSpecification.builder()
                 .tool(tool)
                 .callHandler(McpToolHandler.of((req) -> {
-                    var path = req.getFilePath("path");
                     var system = req.getStringArgument("system");
                     var recursive = req.getOptionalBooleanArgument("recursive").orElse(false);
                     var shellStore = req.getShellStoreRef(system, false);
                     var shellSession = AppBeaconServer.get().getCache().getOrStart(shellStore);
                     var fs = new ConnectionFileSystem(shellSession.getControl());
+                    var path = req.getFilePath(shellSession.getControl(), "path");
 
                     if (!fs.directoryExists(path)) {
                         throw new BeaconClientException("Directory " + path + " does not exist");
@@ -246,12 +248,11 @@ public final class McpTools {
         return McpServerFeatures.SyncToolSpecification.builder()
                 .tool(tool)
                 .callHandler(McpToolHandler.of((req) -> {
-                    var path = req.getFilePath("path");
                     var system = req.getStringArgument("system");
-                    var recursive = req.getOptionalBooleanArgument("recursive").orElse(false);
                     var pattern = req.getStringArgument("name");
                     var shellStore = req.getShellStoreRef(system, false);
                     var shellSession = AppBeaconServer.get().getCache().getOrStart(shellStore);
+                    var path = req.getFilePath(shellSession.getControl(), "path");
                     var fs = new ConnectionFileSystem(shellSession.getControl());
 
                     if (!fs.directoryExists(path)) {
@@ -259,7 +260,7 @@ public final class McpTools {
                     }
 
                     var regex = Pattern.compile(DataStorageQuery.toRegex(pattern));
-                    try (var stream = recursive ? fs.listFilesRecursively(fs, path).stream() : fs.listFiles(fs, path)) {
+                    try (var stream = fs.listFiles(fs, path)) {
                         var list = stream.toList();
                         var builder = McpSchema.CallToolResult.builder();
                         list.stream()
@@ -280,10 +281,10 @@ public final class McpTools {
         return McpServerFeatures.SyncToolSpecification.builder()
                 .tool(tool)
                 .callHandler(McpToolHandler.of((req) -> {
-                    var path = req.getFilePath("path");
                     var system = req.getStringArgument("system");
                     var shellStore = req.getShellStoreRef(system, false);
                     var shellSession = AppBeaconServer.get().getCache().getOrStart(shellStore);
+                    var path = req.getFilePath(shellSession.getControl(), "path");
                     var fs = new ConnectionFileSystem(shellSession.getControl());
 
                     if (!fs.fileExists(path) && !fs.directoryExists(path)) {
@@ -321,10 +322,10 @@ public final class McpTools {
         return McpServerFeatures.SyncToolSpecification.builder()
                 .tool(tool)
                 .callHandler(McpToolHandler.of((req) -> {
-                    var path = req.getFilePath("path");
                     var system = req.getStringArgument("system");
                     var shellStore = req.getShellStoreRef(system, true);
                     var shellSession = AppBeaconServer.get().getCache().getOrStart(shellStore);
+                    var path = req.getFilePath(shellSession.getControl(), "path");
                     var fs = new ConnectionFileSystem(shellSession.getControl());
 
                     if (fs.fileExists(path)) {
@@ -353,11 +354,11 @@ public final class McpTools {
         return McpServerFeatures.SyncToolSpecification.builder()
                 .tool(tool)
                 .callHandler(McpToolHandler.of((req) -> {
-                    var path = req.getFilePath("path");
                     var system = req.getStringArgument("system");
                     var content = req.getStringArgument("content");
                     var shellStore = req.getShellStoreRef(system, true);
                     var shellSession = AppBeaconServer.get().getCache().getOrStart(shellStore);
+                    var path = req.getFilePath(shellSession.getControl(), "path");
                     var fs = new ConnectionFileSystem(shellSession.getControl());
 
                     var b = content.getBytes(StandardCharsets.UTF_8);
@@ -377,10 +378,10 @@ public final class McpTools {
         return McpServerFeatures.SyncToolSpecification.builder()
                 .tool(tool)
                 .callHandler(McpToolHandler.of((req) -> {
-                    var path = req.getFilePath("path");
                     var system = req.getStringArgument("system");
                     var shellStore = req.getShellStoreRef(system, true);
                     var shellSession = AppBeaconServer.get().getCache().getOrStart(shellStore);
+                    var path = req.getFilePath(shellSession.getControl(), "path");
                     var fs = new ConnectionFileSystem(shellSession.getControl());
 
                     if (fs.fileExists(path)) {
@@ -406,12 +407,8 @@ public final class McpTools {
                     var shellStore = req.getShellStoreRef(system, true);
                     var shellSession = AppBeaconServer.get().getCache().getOrStart(shellStore);
 
-                    var out = ProcessControlProvider.get().executeMcpCommand(shellSession.getControl(), command);
-                    var formatted = CommandDialog.formatOutput(out);
-
-                    return McpSchema.CallToolResult.builder()
-                            .addTextContent(formatted)
-                            .build();
+                    var r = ProcessControlProvider.get().executeMcpCommand(shellSession.getControl(), command);
+                    return r;
                 }))
                 .build();
     }
@@ -423,11 +420,11 @@ public final class McpTools {
                 .callHandler(McpToolHandler.of((req) -> {
                     var system = req.getStringArgument("system");
                     var script = req.getDataStoreRef("script");
-                    var directory = req.getFilePath("directory");
                     var arguments = req.getStringArgument("arguments");
 
                     var shellStore = req.getShellStoreRef(system, true);
                     var shellSession = AppBeaconServer.get().getCache().getOrStart(shellStore);
+                    var directory = req.getFilePath(shellSession.getControl(), "directory");
 
                     var clazz = Class.forName(
                             AppExtensionManager.getInstance()
@@ -474,34 +471,6 @@ public final class McpTools {
 
                     return McpSchema.CallToolResult.builder()
                             .addTextContent("Terminal is launching")
-                            .build();
-                }))
-                .build();
-    }
-
-    public static McpServerFeatures.SyncToolSpecification openTerminalInline() throws IOException {
-        var tool = McpSchemaFiles.loadTool("open_terminal_inline.json");
-        return McpServerFeatures.SyncToolSpecification.builder()
-                .tool(tool)
-                .callHandler(McpToolHandler.of((req) -> {
-                    var system = req.getStringArgument("system");
-                    var directory = req.getOptionalStringArgument("directory");
-                    var shellStore = req.getShellStoreRef(system, true);
-                    var shellSession = AppBeaconServer.get().getCache().getOrStart(shellStore);
-
-                    var script = shellSession
-                            .getControl()
-                            .prepareTerminalOpen(
-                                    TerminalInitScriptConfig.ofName(
-                                            shellStore.get().getName()),
-                                    directory.isPresent()
-                                            ? WorkingDirectoryFunction.fixed(FilePath.parse(directory.get()))
-                                            : WorkingDirectoryFunction.none());
-
-                    var json = JsonNodeFactory.instance.objectNode();
-                    json.put("command", script);
-                    return McpSchema.CallToolResult.builder()
-                            .structuredContent(JacksonMapper.getDefault().writeValueAsString(json))
                             .build();
                 }))
                 .build();

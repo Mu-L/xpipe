@@ -1,5 +1,6 @@
 package io.xpipe.app.ext;
 
+import io.modelcontextprotocol.spec.McpSchema;
 import io.xpipe.app.browser.BrowserFullSessionModel;
 import io.xpipe.app.browser.BrowserStoreSessionTab;
 import io.xpipe.app.comp.base.ModalOverlay;
@@ -58,7 +59,7 @@ public abstract class ProcessControlProvider {
 
     public abstract ShellDialect getEffectiveLocalDialect();
 
-    public abstract String executeMcpCommand(ShellControl sc, String command) throws Exception;
+    public abstract McpSchema.CallToolResult executeMcpCommand(ShellControl sc, String command) throws Exception;
 
     public ShellDialect getNextFallbackDialect() {
         var av = getAvailableLocalDialects();
