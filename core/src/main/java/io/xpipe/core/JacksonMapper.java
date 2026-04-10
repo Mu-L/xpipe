@@ -77,7 +77,7 @@ public class JacksonMapper {
         return INSTANCE;
     }
 
-    public static ObjectMapper getCensored() {
+    public static ObjectMapper getRedactedSecretMapper() {
         if (!JacksonMapper.isInit()) {
             return BASE;
         }
@@ -101,6 +101,38 @@ public class JacksonMapper {
                             TypeSerializer typeSer)
                             throws IOException {
                         gen.writeString("<secret>");
+                    }
+                });
+                super.setupModule(context);
+            }
+        });
+        return c;
+    }
+
+    public static ObjectMapper getUnredactSecretMapper() {
+        if (!JacksonMapper.isInit()) {
+            return BASE;
+        }
+
+        var c = INSTANCE.copy();
+        c.registerModule(new SimpleModule() {
+            @Override
+            public void setupModule(SetupContext context) {
+                addSerializer(SecretValue.class, new JsonSerializer<>() {
+                    @Override
+                    public void serialize(SecretValue value, JsonGenerator gen, SerializerProvider serializers)
+                            throws IOException {
+                        gen.writeString(value.getSecretValue());
+                    }
+
+                    @Override
+                    public void serializeWithType(
+                            SecretValue value,
+                            JsonGenerator gen,
+                            SerializerProvider serializers,
+                            TypeSerializer typeSer)
+                            throws IOException {
+                        gen.writeString(value.getSecretValue());
                     }
                 });
                 super.setupModule(context);
