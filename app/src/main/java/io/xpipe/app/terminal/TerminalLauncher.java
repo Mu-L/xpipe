@@ -7,6 +7,7 @@ import io.xpipe.app.prefs.AppPrefs;
 import io.xpipe.app.process.*;
 import io.xpipe.app.storage.DataStorage;
 import io.xpipe.app.storage.DataStoreEntry;
+import io.xpipe.app.util.ThreadHelper;
 import io.xpipe.core.FailableFunction;
 import io.xpipe.core.FilePath;
 import io.xpipe.core.OsType;
@@ -14,6 +15,8 @@ import io.xpipe.core.OsType;
 import lombok.Value;
 
 import java.io.IOException;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -22,6 +25,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.stream.Collectors;
 
 public class TerminalLauncher {
+
+    private static Instant lastLaunch = Instant.EPOCH;
 
     public static FilePath constructTerminalInitFile(
             ShellDialect t,
@@ -176,24 +181,29 @@ public class TerminalLauncher {
         }
 
         if (effectivePreferTabs) {
-            synchronized (TerminalLauncher.class) {
-                // There will be timing issues when launching multiple tabs in a short time span
-                TerminalMultiplexerManager.synchronizeMultiplexerLaunchTiming();
+            // Synchronize between multiple existing tab launches as some terminals and multiplexers might break there
+            var elapsed = Duration.between(lastLaunch, Instant.now()).toMillis();
+            if (elapsed < 1000) {
+                ThreadHelper.sleep(1000 - elapsed);
+            }
+            lastLaunch = Instant.now();
 
-                // Track sessions that are used for the multiplexer
-                // Used to figure out when it dies
-                TerminalMultiplexerManager.registerSessionLaunch(launchConfig);
+            // There will be timing issues when launching multiple tabs in a short time span
+            TerminalMultiplexerManager.synchronizeMultiplexerLaunchTiming();
 
-                if (launchMultiplexerTabInExistingTerminal(launchConfig)) {
-                    latch.await();
-                    return;
-                }
+            // Track sessions that are used for the multiplexer
+            // Used to figure out when it dies
+            TerminalMultiplexerManager.registerSessionLaunch(launchConfig);
 
-                var multiplexerConfig = launchMultiplexerTabInNewTerminal(launchConfig);
-                if (multiplexerConfig.isPresent()) {
-                    launch(type, multiplexerConfig.get(), latch);
-                    return;
-                }
+            if (launchMultiplexerTabInExistingTerminal(launchConfig)) {
+                latch.await();
+                return;
+            }
+
+            var multiplexerConfig = launchMultiplexerTabInNewTerminal(launchConfig);
+            if (multiplexerConfig.isPresent()) {
+                launch(type, multiplexerConfig.get(), latch);
+                return;
             }
         }
 

@@ -12,7 +12,6 @@ public class TerminalMultiplexerManager {
 
     private static final Map<UUID, TerminalMultiplexer> connectionHubRequests = new HashMap<>();
     private static UUID pendingMultiplexerLaunch;
-    private static Instant lastCheck = Instant.now();
     private static UUID runningMultiplexerContainer;
 
     public static void registerMultiplexerContainerLaunch(UUID uuid) {
@@ -86,14 +85,6 @@ public class TerminalMultiplexerManager {
             // We timed out
             pendingMultiplexerLaunch = null;
         }
-
-        // Synchronize between multiple existing tab launches as well as some multiplexers might break there
-        var elapsed = Duration.between(lastCheck, Instant.now()).toMillis();
-        if (elapsed < 1000) {
-            ThreadHelper.sleep(1000 - elapsed);
-        }
-
-        lastCheck = Instant.now();
     }
 
     public static void registerSessionLaunch(TerminalLaunchConfiguration configuration) {
