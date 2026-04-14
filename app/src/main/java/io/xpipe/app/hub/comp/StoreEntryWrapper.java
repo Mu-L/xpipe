@@ -168,7 +168,7 @@ public class StoreEntryWrapper {
 
     public synchronized void update() {
         // We are probably in shutdown then
-        if (AppOperationMode.isInShutdown()) {
+        if (StoreViewState.get() == null) {
             return;
         }
 
