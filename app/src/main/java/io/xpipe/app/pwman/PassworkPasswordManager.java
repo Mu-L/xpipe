@@ -73,7 +73,6 @@ public class PassworkPasswordManager implements PasswordManager {
                 .nonNull()
                 .nameAndDescription("passworkMasterKey")
                 .addComp(new SecretFieldComp(masterKey, false).maxWidth(600), masterKey)
-                .nonNull()
                 .nameAndDescription("passwordManagerTest")
                 .addComp(new PasswordManagerTestComp(true))
                 .bind(
@@ -97,7 +96,7 @@ public class PassworkPasswordManager implements PasswordManager {
 
     @Override
     public synchronized Result query(String key) {
-        if (serverUrl == null || token == null || masterKey == null) {
+        if (serverUrl == null || token == null) {
             return null;
         }
 
@@ -115,9 +114,9 @@ public class PassworkPasswordManager implements PasswordManager {
             var fixedServerUrl = serverUrl.startsWith("http") ? serverUrl : "https://" + serverUrl;
             getOrStartShell().view().setSensitiveEnvironmentVariable("PASSWORK_HOST", fixedServerUrl);
             getOrStartShell().view().setSensitiveEnvironmentVariable("PASSWORK_TOKEN", token.getSecretValue());
-            getOrStartShell()
-                    .view()
-                    .setSensitiveEnvironmentVariable("PASSWORK_MASTER_KEY", masterKey.getSecretValue());
+            if (masterKey != null) {
+                getOrStartShell().view().setSensitiveEnvironmentVariable("PASSWORK_MASTER_KEY", masterKey.getSecretValue());
+            }
             var user = getOrStartShell()
                     .command(CommandBuilder.of()
                             .add("passwork-cli")
