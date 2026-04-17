@@ -1,5 +1,6 @@
 package io.xpipe.app.terminal;
 
+import io.xpipe.app.core.AppProperties;
 import io.xpipe.app.issue.ErrorEvent;
 import io.xpipe.app.issue.ErrorEventFactory;
 import io.xpipe.app.process.LocalShell;
@@ -24,6 +25,10 @@ public interface TerminalMultiplexer {
     }
 
     static TerminalMultiplexer determineDefault(TerminalMultiplexer existing) {
+        if (!AppProperties.get().isInitialLaunch()) {
+            return existing;
+        }
+
         if (OsType.ofLocal() == OsType.WINDOWS) {
             return existing;
         }
@@ -33,10 +38,10 @@ public interface TerminalMultiplexer {
                 return existing;
             }
 
-            var all = List.of(new TmuxTerminalMultiplexer(), new ZellijTerminalMultiplexer(), new ScreenTerminalMultiplexer());
-            for (TerminalMultiplexer terminalMultiplexer : all) {
-                if (terminalMultiplexer.shouldSelect()) {
-                    return terminalMultiplexer;
+            var all = List.of(new TmuxTerminalMultiplexer(), new ZellijTerminalMultiplexer());
+            for (TerminalMultiplexer m : all) {
+                if (m.shouldSelect()) {
+                    return m;
                 }
             }
         } catch (Exception e) {
