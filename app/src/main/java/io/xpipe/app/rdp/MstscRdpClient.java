@@ -95,11 +95,11 @@ public class MstscRdpClient implements ExternalApplicationType.PathApplication, 
     static OptionsBuilder createOptions(Property<MstscRdpClient> property) {
         var smartSizing = new SimpleObjectProperty<>(property.getValue().isSmartSizing());
 
-        var rdpSecurityValueVisible = new SimpleBooleanProperty();
+        var rdpSecurityValueHide = new SimpleBooleanProperty();
         var rdpSecurityValue = new SimpleBooleanProperty();
         ThreadHelper.runAsync(() -> {
             var val = MstscRdpClient.usesNewSecurityDialog();
-            rdpSecurityValueVisible.set(val);
+            rdpSecurityValueHide.set(!val);
 
             Platform.runLater(() -> {
                 rdpSecurityValue.set(!MstscRdpClient.isNewSecurityDialogEnabled());
@@ -116,6 +116,7 @@ public class MstscRdpClient implements ExternalApplicationType.PathApplication, 
                 .addToggle(smartSizing)
                 .nameAndDescription("disableRdpWindowsSecurityWarning")
                 .addToggle(rdpSecurityValue)
+                .hide(rdpSecurityValueHide)
                 .bind(
                         () -> MstscRdpClient.builder()
                                 .smartSizing(smartSizing.get())
