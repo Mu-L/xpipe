@@ -165,7 +165,8 @@ public class TerminalDockHubManager {
                 }
 
                 return false;
-            });
+            },
+            true);
 
     private void addDialogListeners() {
         AppDialog.getModalOverlays().addListener((ListChangeListener<? super ModalOverlay>) c -> {

@@ -233,15 +233,24 @@ public class AppLayoutModel {
 
     @Value
     @NonFinal
+    @AllArgsConstructor
     public static class QueueEntry {
 
         public static QueueEntry ofNotification(String key, String value) {
             return new QueueEntry(AppI18n.observable(key), new LabelGraphic.IconGraphic(value), () -> true);
         }
 
+        public QueueEntry(ObservableValue<String> name, LabelGraphic icon, Supplier<Boolean> action) {
+            this.name = name;
+            this.icon = icon;
+            this.action = action;
+            this.top = false;
+        }
+
         ObservableValue<String> name;
         LabelGraphic icon;
         Supplier<Boolean> action;
+        boolean top;
 
         public void execute() {
             ThreadHelper.runAsync(() -> {

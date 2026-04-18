@@ -106,11 +106,13 @@ public class SideMenuBarComp extends RegionBuilder<VBox> {
         VBox.setVgrow(filler, Priority.ALWAYS);
         vbox.getStyleClass().add("sidebar-comp");
 
-        var queueButtons = new VBox();
+        var topQueueButtons = new VBox();
+        var bottomQueueButtons = new VBox();
         queueEntries.addListener((ListChangeListener<? super AppLayoutModel.QueueEntry>) c -> {
             var l = new ArrayList<>(c.getList());
             PlatformThread.runLaterIfNeeded(() -> {
-                queueButtons.getChildren().clear();
+                topQueueButtons.getChildren().clear();
+                bottomQueueButtons.getChildren().clear();
                 for (int i = l.size() - 1; i >= 0; i--) {
                     var item = l.get(i);
                     var b = new IconButtonComp(item.getIcon(), null);
@@ -124,11 +126,12 @@ public class SideMenuBarComp extends RegionBuilder<VBox> {
                         });
                     });
                     var stack = createStyle(null, b);
-                    queueButtons.getChildren().add(stack.build());
+                    (item.isTop() ? topQueueButtons : bottomQueueButtons).getChildren().add(stack.build());
                 }
             });
         });
-        vbox.getChildren().add(queueButtons);
+        vbox.getChildren().addFirst(topQueueButtons);
+        vbox.getChildren().add(bottomQueueButtons);
         vbox.setMinHeight(0);
         vbox.setPrefHeight(0);
 
